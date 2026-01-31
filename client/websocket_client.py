@@ -81,7 +81,7 @@ class NodeClient:
         url = f"{self.server_url}/{self.node_id}"
         headers = {"Authorization": f"Bearer {self.auth_token}"}
 
-        async with websockets.connect(url, extra_headers=headers) as ws:
+        async with websockets.connect(url, additional_headers=headers) as ws:
             self._ws = ws
             logger.info(f"Connected to {self.server_url}")
             self._reconnect_delay = 1  # Reset on successful connection
