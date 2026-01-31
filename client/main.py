@@ -77,37 +77,76 @@ def test_server_connection(server_url: str, auth_token: str) -> tuple[bool, str]
     return asyncio.run(_test())
 
 
+def _parse_server_url(url: str) -> tuple[str, str]:
+    """Parse server URL into (host, port)."""
+    # ws://host:port/ws -> (host, port)
+    import re
+    match = re.match(r'wss?://([^:/]+):?(\d+)?', url)
+    if match:
+        host = match.group(1)
+        port = match.group(2) or "8765"
+        return host, port
+    return "", "8765"
+
+
 def first_run_wizard() -> dict:
     """Interactive first-run setup wizard."""
     print_banner()
-    print("First Time Setup\n")
 
-    # Generate defaults
+    # Try to load existing config
+    config_path = get_default_config_path()
+    existing_config = {}
+    if config_path.exists():
+        try:
+            import yaml
+            with open(config_path) as f:
+                existing_config = yaml.safe_load(f) or {}
+            print("Updating existing configuration\n")
+        except Exception:
+            pass
+
+    if not existing_config:
+        print("First Time Setup\n")
+
+    # Start with defaults, overlay existing
     config = generate_default_config()
+    config.update(existing_config)
+
+    # Parse existing server URL for defaults
+    existing_host, existing_port = "", "8765"
+    if existing_config.get("server_url"):
+        existing_host, existing_port = _parse_server_url(existing_config["server_url"])
 
     # Node ID
-    default_id = config["node_id"]
+    default_id = config.get("node_id", "")
     node_id = input(f"Node ID [{default_id}]: ").strip() or default_id
     config["node_id"] = node_id
 
     # Server - just IP/hostname
+    prompt = f"Server IP or hostname [{existing_host}]: " if existing_host else "Server IP or hostname: "
     while True:
-        server = input("Server IP or hostname: ").strip()
+        server = input(prompt).strip() or existing_host
         if not server:
             print("  Required.")
             continue
         break
 
     # Port with default
-    port_input = input("Port [8765]: ").strip()
-    port = port_input if port_input else "8765"
+    port_input = input(f"Port [{existing_port}]: ").strip()
+    port = port_input if port_input else existing_port
 
     # Build URL
     config["server_url"] = f"ws://{server}:{port}/ws"
 
     # Auth token
+    existing_token = config.get("auth_token", "")
+    masked_token = f"{existing_token[:8]}..." if len(existing_token) > 8 else existing_token
+    prompt = f"Auth token [{masked_token}]: " if existing_token else "Auth token: "
     while True:
-        auth_token = input("Auth token: ").strip()
+        auth_token = input(prompt).strip()
+        if not auth_token and existing_token:
+            auth_token = existing_token
+            break
         if not auth_token:
             print("  Required.")
             continue
@@ -124,17 +163,34 @@ def first_run_wizard() -> dict:
         ("shotgrid", "ShotGrid - production tracking"),
     ]
 
+    existing_plugins = config.get("plugins", [])
+    existing_plugin_config = config.get("plugin_config", {})
+
     enabled_plugins = []
     plugin_config = {}
 
     for plugin_name, description in available_plugins:
-        enable = input(f"Enable {plugin_name}? ({description}) [Y/n]: ").strip().lower()
-        if enable != "n":
+        was_enabled = plugin_name in existing_plugins
+        default = "Y" if was_enabled else "n"
+        prompt_suffix = f"[{default}]" if was_enabled else "[y/N]"
+        enable = input(f"Enable {plugin_name}? ({description}) {prompt_suffix}: ").strip().lower()
+
+        # Determine if enabled
+        if was_enabled:
+            is_enabled = enable != "n"
+        else:
+            is_enabled = enable == "y"
+
+        if is_enabled:
             enabled_plugins.append(plugin_name)
 
             # Ask for custom path for plugins that need executables
             if plugin_name in ("rv", "nuke"):
-                custom_path = input(f"  {plugin_name} path (blank to auto-detect): ").strip()
+                existing_path = existing_plugin_config.get(plugin_name, {}).get("path", "")
+                if existing_path:
+                    custom_path = input(f"  {plugin_name} path [{existing_path}]: ").strip() or existing_path
+                else:
+                    custom_path = input(f"  {plugin_name} path (blank to auto-detect): ").strip()
                 if custom_path:
                     plugin_config[plugin_name] = {"path": custom_path}
 
