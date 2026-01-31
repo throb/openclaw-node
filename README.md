@@ -7,32 +7,28 @@ Remote execution framework for VFX/post-production pipeline automation. Execute 
 ```mermaid
 flowchart LR
     subgraph VPS["VPS Server"]
-        API["REST API\n/api/health\n/api/nodes\n/api/exec"]
-        WS["WebSocket\nServer"]
-        AUTH["Auth\nProvider"]
-        REG["Node\nRegistry"]
+        API["REST API"]
+        WS["WebSocket Server"]
+        AUTH["Auth Provider"]
+        REG["Node Registry"]
+        API --> WS
+        AUTH -.-> WS
+        WS --> REG
     end
 
-    subgraph WS1["Workstation 1 (Windows)"]
-        C1["Python Client"]
-        P1A["RV Plugin"]
-        P1B["Nuke Plugin"]
-        P1C["Explorer Plugin"]
+    subgraph CLIENT["Workstation"]
+        C["Python Client"]
+        subgraph PLUGINS["Plugins"]
+            P1["RV"]
+            P2["Nuke"]
+            P3["Resolve"]
+            P4["Explorer"]
+            P5["ShotGrid"]
+        end
+        C --> PLUGINS
     end
 
-    subgraph WS2["Workstation 2 (macOS)"]
-        C2["Python Client"]
-        P2A["Resolve Plugin"]
-        P2B["Explorer Plugin"]
-    end
-
-    API --> WS
-    WS <-->|"WSS\n(persistent)"| C1
-    WS <-->|"WSS\n(persistent)"| C2
-    C1 --> P1A & P1B & P1C
-    C2 --> P2A & P2B
-    AUTH -.-> WS
-    WS --> REG
+    WS <-->|"WebSocket\n(persistent)"| C
 ```
 
 ## Features
