@@ -41,6 +41,42 @@ def print_banner():
 """)
 
 
+def test_server_connection(server_url: str, auth_token: str) -> tuple[bool, str]:
+    """Test connection to server. Returns (success, message)."""
+    import websockets
+    import json
+
+    async def _test():
+        url = f"{server_url}/test-connection"
+        headers = {"Authorization": f"Bearer {auth_token}"}
+        try:
+            async with websockets.connect(url, additional_headers=headers) as ws:
+                # Send registration
+                await ws.send(json.dumps({
+                    "type": "register",
+                    "node_id": "test-connection",
+                    "plugins": [],
+                    "platform": "test",
+                }))
+                # Wait for ack
+                response = await asyncio.wait_for(ws.recv(), timeout=5.0)
+                data = json.loads(response)
+                if data.get("type") == "registered":
+                    return True, "Connection successful!"
+                return False, f"Unexpected response: {data}"
+        except asyncio.TimeoutError:
+            return False, "Connection timed out"
+        except ConnectionRefusedError:
+            return False, "Connection refused - is the server running?"
+        except Exception as e:
+            error_msg = str(e)
+            if "4001" in error_msg or "Unauthorized" in error_msg.lower():
+                return False, "Authentication failed - check your token"
+            return False, f"Connection failed: {error_msg}"
+
+    return asyncio.run(_test())
+
+
 def first_run_wizard() -> dict:
     """Interactive first-run setup wizard."""
     print_banner()
@@ -78,13 +114,28 @@ def first_run_wizard() -> dict:
         break
     config["auth_token"] = auth_token
 
+    # Test connection
+    print(f"\nTesting connection to {config['server_url']}...")
+    success, message = test_server_connection(config["server_url"], config["auth_token"])
+
+    if success:
+        print(f"  {message}")
+    else:
+        print(f"  {message}")
+        retry = input("\nSave config anyway? [y/N]: ").strip().lower()
+        if retry != "y":
+            print("Setup cancelled. Run setup again to retry.")
+            return config
+
     # Save config
     config_path = get_default_config_path()
     create_config_file(config_path, config)
 
     print(f"\nConfig saved to: {config_path}")
-    print(f"Connecting to: {config['server_url']}")
-    print("Run 'openclaw-node' again to connect.\n")
+    if success:
+        print("Run 'openclaw-node' to connect.\n")
+    else:
+        print("Fix the connection issue and run 'openclaw-node' to connect.\n")
 
     return config
 
