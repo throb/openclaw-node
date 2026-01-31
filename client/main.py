@@ -54,26 +54,26 @@ def first_run_wizard() -> dict:
     node_id = input(f"Node ID [{default_id}]: ").strip() or default_id
     config["node_id"] = node_id
 
-    # Server URL - required, no useless default
-    print("\nEnter your OpenClaw server address.")
-    print("Example: ws://myserver.com:8765/ws")
+    # Server - just IP/hostname
     while True:
-        server_url = input("Server URL: ").strip()
-        if not server_url:
-            print("  Server URL is required.")
-            continue
-        if not (server_url.startswith("ws://") or server_url.startswith("wss://")):
-            print("  URL must start with ws:// or wss://")
+        server = input("Server IP or hostname: ").strip()
+        if not server:
+            print("  Required.")
             continue
         break
-    config["server_url"] = server_url
 
-    # Auth token - required
-    print("\nEnter the auth token from your server admin.")
+    # Port with default
+    port_input = input("Port [8765]: ").strip()
+    port = port_input if port_input else "8765"
+
+    # Build URL
+    config["server_url"] = f"ws://{server}:{port}/ws"
+
+    # Auth token
     while True:
         auth_token = input("Auth token: ").strip()
         if not auth_token:
-            print("  Auth token is required.")
+            print("  Required.")
             continue
         break
     config["auth_token"] = auth_token
@@ -83,6 +83,7 @@ def first_run_wizard() -> dict:
     create_config_file(config_path, config)
 
     print(f"\nConfig saved to: {config_path}")
+    print(f"Connecting to: {config['server_url']}")
     print("Run 'openclaw-node' again to connect.\n")
 
     return config
