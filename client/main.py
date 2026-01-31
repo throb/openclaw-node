@@ -54,20 +54,29 @@ def first_run_wizard() -> dict:
     node_id = input(f"Node ID [{default_id}]: ").strip() or default_id
     config["node_id"] = node_id
 
-    # Server URL
-    default_url = config["server_url"]
-    server_url = input(f"Server URL [{default_url}]: ").strip() or default_url
+    # Server URL - required, no useless default
+    print("\nEnter your OpenClaw server address.")
+    print("Example: ws://myserver.com:8765/ws")
+    while True:
+        server_url = input("Server URL: ").strip()
+        if not server_url:
+            print("  Server URL is required.")
+            continue
+        if not (server_url.startswith("ws://") or server_url.startswith("wss://")):
+            print("  URL must start with ws:// or wss://")
+            continue
+        break
     config["server_url"] = server_url
 
-    # Token
-    print(f"\nGenerated auth token: {config['auth_token']}")
-    print("Save this token! You'll need to add it to the server.\n")
-
-    use_generated = input("Use this token? [Y/n]: ").strip().lower()
-    if use_generated == "n":
-        custom_token = input("Enter custom token: ").strip()
-        if custom_token:
-            config["auth_token"] = custom_token
+    # Auth token - required
+    print("\nEnter the auth token from your server admin.")
+    while True:
+        auth_token = input("Auth token: ").strip()
+        if not auth_token:
+            print("  Auth token is required.")
+            continue
+        break
+    config["auth_token"] = auth_token
 
     # Save config
     config_path = get_default_config_path()
