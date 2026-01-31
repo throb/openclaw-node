@@ -104,17 +104,32 @@ Environment variables:
 
 ### Client
 
-Config file (`~/.config/openclaw/node_config.yaml` on Linux):
+**Config file locations:**
+| Platform | Path |
+|----------|------|
+| Linux | `~/.config/openclaw/node_config.yaml` |
+| macOS | `~/Library/Application Support/OpenClaw/node_config.yaml` |
+| Windows | `%APPDATA%\OpenClaw\node_config.yaml` |
 
+On Windows, open with: `notepad %APPDATA%\OpenClaw\node_config.yaml`
+
+**Config format:**
 ```yaml
 node_id: my-workstation
-server_url: wss://your-server.com:8765/ws
+server_url: ws://your-server.com:8765/ws
 auth_token: your-secret-token
 
 plugins:
   - explorer
   - rv
   - nuke
+
+# Optional: custom paths for applications
+plugin_config:
+  rv:
+    path: C:\Program Files\RV\bin\rv.exe
+  nuke:
+    path: C:\Program Files\Nuke15.0v1\Nuke15.0.exe
 
 allowed_paths:
   - /path/to/projects
