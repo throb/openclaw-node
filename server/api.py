@@ -1,7 +1,7 @@
 """REST API endpoints for OpenClaw Node server."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -76,7 +76,7 @@ async def health_check():
     """Health check endpoint."""
     return HealthResponse(
         status="ok",
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         nodes_connected=_ws_server.connection_count if _ws_server else 0,
         pending_commands=_command_router.pending_count if _command_router else 0,
     )

@@ -114,8 +114,8 @@ async def node_websocket(websocket: WebSocket, node_id: str):
                 # Update heartbeat timestamp
                 node = registry.get(node_id)
                 if node:
-                    from datetime import datetime
-                    node.last_heartbeat = datetime.utcnow()
+                    from datetime import datetime, timezone
+                    node.last_heartbeat = datetime.now(timezone.utc)
                 continue
 
             # Assume it's a response to a command

@@ -1,7 +1,7 @@
 """Client registry for tracking connected nodes."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 
@@ -25,7 +25,7 @@ class ClientRegistry:
         """Register a new node."""
         info = NodeInfo(
             node_id=node_id,
-            connected_at=datetime.utcnow(),
+            connected_at=datetime.now(timezone.utc),
             plugins=plugins,
             platform=platform,
         )
