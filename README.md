@@ -4,17 +4,35 @@ Remote execution framework for VFX/post-production pipeline automation. Execute 
 
 ## Architecture
 
-```
-┌─────────────────┐     WebSocket      ┌─────────────────┐
-│   VPS Server    │◄──────────────────►│  Workstation 1  │
-│  (FastAPI)      │                    │  (Python Client)│
-│                 │                    │  - RV Plugin    │
-│  REST API       │     WebSocket      │  - Nuke Plugin  │
-│  /api/nodes     │◄──────────────────►├─────────────────┤
-│  /api/exec      │                    │  Workstation 2  │
-└─────────────────┘                    │  - Resolve      │
-                                       │  - Explorer     │
-                                       └─────────────────┘
+```mermaid
+flowchart LR
+    subgraph VPS["VPS Server"]
+        API["REST API\n/api/health\n/api/nodes\n/api/exec"]
+        WS["WebSocket\nServer"]
+        AUTH["Auth\nProvider"]
+        REG["Node\nRegistry"]
+    end
+
+    subgraph WS1["Workstation 1 (Windows)"]
+        C1["Python Client"]
+        P1A["RV Plugin"]
+        P1B["Nuke Plugin"]
+        P1C["Explorer Plugin"]
+    end
+
+    subgraph WS2["Workstation 2 (macOS)"]
+        C2["Python Client"]
+        P2A["Resolve Plugin"]
+        P2B["Explorer Plugin"]
+    end
+
+    API --> WS
+    WS <-->|"WSS\n(persistent)"| C1
+    WS <-->|"WSS\n(persistent)"| C2
+    C1 --> P1A & P1B & P1C
+    C2 --> P2A & P2B
+    AUTH -.-> WS
+    WS --> REG
 ```
 
 ## Features
