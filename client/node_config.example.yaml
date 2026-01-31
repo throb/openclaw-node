@@ -9,12 +9,28 @@ auth_token: ${OPENCLAW_NODE_TOKEN}
 plugins:
   - rv
   - explorer
+  # - nuke
   # - resolve
+  # - shotgrid
 
-# Allowed paths for file operations (security)
+# Plugin-specific configuration (optional)
+# Specify custom paths for applications
+plugin_config:
+  rv:
+    path: /usr/local/bin/rv
+    # Or on Windows: C:\Program Files\RV\bin\rv.exe
+    # Or on macOS: /Applications/RV.app/Contents/MacOS/RV
+  nuke:
+    path: /usr/local/Nuke15.0v1/Nuke15.0
+    # Or on Windows: C:\Program Files\Nuke15.0v1\Nuke15.0.exe
+
+# Allowed paths for file operations (security whitelist)
 allowed_paths:
   - /path/to/projects
   - /path/to/renders
 
 # Optional: platform override (auto-detected if not set)
 # platform: windows
+
+# Heartbeat interval in seconds (default: 30)
+# heartbeat_interval: 30

@@ -144,8 +144,9 @@ async def run_client(config: dict):
     """Run the client with given configuration."""
     logger.info(f"Starting node: {config['node_id']}")
 
-    # Load plugins
-    loader = PluginLoader()
+    # Load plugins with config
+    plugin_config = config.get("plugin_config", {})
+    loader = PluginLoader(plugin_config=plugin_config)
     plugins = loader.load_all(config.get("plugins", []))
     logger.info(f"Loaded plugins: {list(plugins.keys())}")
 

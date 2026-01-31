@@ -14,8 +14,15 @@ logger = logging.getLogger(__name__)
 class PluginLoader:
     """Discovers and loads plugins from the plugins package."""
 
-    def __init__(self):
+    def __init__(self, plugin_config: Optional[Dict[str, Dict]] = None):
+        """Initialize loader with optional plugin configuration.
+
+        Args:
+            plugin_config: Dict mapping plugin names to their config.
+                Example: {"rv": {"path": "/custom/rv"}, "nuke": {"path": "/opt/nuke"}}
+        """
         self._platform = platform.system().lower()
+        self._plugin_config = plugin_config or {}
 
     def load_all(self, enabled_plugins: List[str]) -> Dict[str, BasePlugin]:
         """Load all enabled plugins.
@@ -30,7 +37,8 @@ class PluginLoader:
 
         for plugin_name in enabled_plugins:
             try:
-                plugin = self._load_plugin(plugin_name)
+                config = self._plugin_config.get(plugin_name, {})
+                plugin = self._load_plugin(plugin_name, config)
                 if plugin:
                     # Check platform support
                     if self._platform not in plugin.platform_supported:
@@ -49,19 +57,26 @@ class PluginLoader:
 
         return loaded
 
-    def _load_plugin(self, name: str) -> Optional[BasePlugin]:
+    def _load_plugin(self, name: str, config: Dict = None) -> Optional[BasePlugin]:
         """Load a single plugin by name.
 
         Args:
             name: Plugin name (e.g., 'explorer', 'rv')
+            config: Plugin-specific configuration
 
         Returns:
             Plugin instance or None if not found
         """
+        config = config or {}
+
         # Try the registry first
         if name in PLUGINS:
             plugin_class = PLUGINS[name]
-            return plugin_class()
+            try:
+                return plugin_class(config=config)
+            except TypeError:
+                # Plugin doesn't accept config
+                return plugin_class()
 
         # Fallback: try to import dynamically
         try:
@@ -71,7 +86,10 @@ class PluginLoader:
             class_name = f"{name.title()}Plugin"
             if hasattr(module, class_name):
                 plugin_class = getattr(module, class_name)
-                return plugin_class()
+                try:
+                    return plugin_class(config=config)
+                except TypeError:
+                    return plugin_class()
 
             # Fallback: look for any BasePlugin subclass
             for attr_name in dir(module):
@@ -81,7 +99,10 @@ class PluginLoader:
                     and issubclass(attr, BasePlugin)
                     and attr != BasePlugin
                 ):
-                    return attr()
+                    try:
+                        return attr(config=config)
+                    except TypeError:
+                        return attr()
 
             logger.warning(f"No plugin class found in {name}")
             return None

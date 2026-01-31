@@ -1,5 +1,6 @@
 """RV Viewer Plugin - Open playlists and media in RV."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -19,11 +20,24 @@ class RvPlugin(BasePlugin):
     def platform_supported(self) -> List[str]:
         return ["windows", "darwin", "linux"]
 
-    def __init__(self):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        self._config = config or {}
         self._rv_path = self._find_rv()
 
     def _find_rv(self) -> str:
         """Find RV executable."""
+        # 1. Check plugin config
+        if self._config.get("path"):
+            path = self._config["path"]
+            if os.path.isfile(path) and os.access(path, os.X_OK):
+                return path
+
+        # 2. Check environment variable
+        env_path = os.environ.get("RV_PATH")
+        if env_path and os.path.isfile(env_path):
+            return env_path
+
+        # 3. Auto-detect from common locations
         candidates = [
             "rv",  # In PATH
             "/usr/local/bin/rv",
