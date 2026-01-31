@@ -114,6 +114,34 @@ def first_run_wizard() -> dict:
         break
     config["auth_token"] = auth_token
 
+    # Plugin configuration
+    print("\n-- Plugins --")
+    available_plugins = [
+        ("explorer", "File Explorer - open folders, reveal files"),
+        ("rv", "RV - media player"),
+        ("nuke", "Nuke - compositing"),
+        ("resolve", "DaVinci Resolve - editing/color"),
+        ("shotgrid", "ShotGrid - production tracking"),
+    ]
+
+    enabled_plugins = []
+    plugin_config = {}
+
+    for plugin_name, description in available_plugins:
+        enable = input(f"Enable {plugin_name}? ({description}) [Y/n]: ").strip().lower()
+        if enable != "n":
+            enabled_plugins.append(plugin_name)
+
+            # Ask for custom path for plugins that need executables
+            if plugin_name in ("rv", "nuke"):
+                custom_path = input(f"  {plugin_name} path (blank to auto-detect): ").strip()
+                if custom_path:
+                    plugin_config[plugin_name] = {"path": custom_path}
+
+    config["plugins"] = enabled_plugins
+    if plugin_config:
+        config["plugin_config"] = plugin_config
+
     # Test connection
     print(f"\nTesting connection to {config['server_url']}...")
     success, message = test_server_connection(config["server_url"], config["auth_token"])

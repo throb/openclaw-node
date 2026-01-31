@@ -120,14 +120,24 @@ platform: {config['platform']}
 # Enabled plugins
 plugins:
 {chr(10).join(f'  - {p}' for p in config['plugins'])}
+"""
 
+    # Add plugin_config if present
+    if config.get('plugin_config'):
+        content += "\n# Plugin-specific configuration\nplugin_config:\n"
+        for plugin_name, plugin_cfg in config['plugin_config'].items():
+            content += f"  {plugin_name}:\n"
+            for key, value in plugin_cfg.items():
+                content += f"    {key}: {value}\n"
+
+    content += """
 # Allowed paths for file operations (security whitelist)
 # Leave empty to allow all paths (not recommended for production)
 allowed_paths: []
 
 # Heartbeat interval in seconds
-heartbeat_interval: {config['heartbeat_interval']}
-"""
+heartbeat_interval: {heartbeat}
+""".format(heartbeat=config.get('heartbeat_interval', 30))
 
     with open(path, "w") as f:
         f.write(content)
