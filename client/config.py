@@ -128,7 +128,12 @@ plugins:
         for plugin_name, plugin_cfg in config['plugin_config'].items():
             content += f"  {plugin_name}:\n"
             for key, value in plugin_cfg.items():
-                content += f"    {key}: {value}\n"
+                # Quote strings that contain backslashes (Windows paths) or special chars
+                if isinstance(value, str) and ('\\' in value or ':' in value or ' ' in value):
+                    # Use single quotes to avoid backslash escape interpretation
+                    content += f"    {key}: '{value}'\n"
+                else:
+                    content += f"    {key}: {value}\n"
 
     content += """
 # Allowed paths for file operations (security whitelist)
